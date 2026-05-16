@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>استبيان Arduino - إجابات إجبارية</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"
+    ></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Tajawal", sans-serif;
+      }
+      body {
+        background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
+        min-height: 100vh;
+        padding: 1.5rem 1rem;
+      }
+      .survey-container {
+        max-width: 780px;
+        margin: 0 auto;
+      }
+      .header-card {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(8px);
+        border-radius: 48px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+      }
+      .header-card h1 {
+        color: #023e8a;
+        font-size: 1.8rem;
+      }
+      .badge {
+        background: #ffb703;
+        display: inline-block;
+        padding: 0.2rem 1rem;
+        border-radius: 60px;
+        font-weight: bold;
+      }
+      .form-card {
+        background: #ffffffdd;
+        backdrop-filter: blur(4px);
+        border-radius: 48px;
+        padding: 1.5rem;
+        box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+      }
+      .question-block {
+        background: white;
+        border-radius: 24px;
+        padding: 1rem;
+        margin-bottom: 1.2rem;
+        border-right: 5px solid #00b4d8;
+        transition: 0.2s;
+      }
+      .question-block.error-border {
+        border-right-color: #e63946;
+        background: #fff5f5;
+      }
+      .q-label {
+        font-weight: 800;
+        color: #023e8a;
+        margin-bottom: 0.7rem;
+        display: flex;
+        gap: 8px;
+      }
+      .required-star {
+        color: #e63946;
+        font-size: 0.9rem;
+        margin-right: 5px;
+      }
+      .rating-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+      }
+      .rating-option {
+        background: #f1f5f9;
+        padding: 5px 12px;
+        border-radius: 40px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .inline-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      input,
+      select,
+      textarea {
+        width: 100%;
+        padding: 10px 14px;
+        border-radius: 28px;
+        border: 1.5px solid #e2e8f0;
+        font-size: 0.9rem;
+      }
+      .btn-submit {
+        background: linear-gradient(95deg, #0077b6, #0096c7);
+        color: white;
+        border: none;
+        width: 100%;
+        padding: 0.9rem;
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-radius: 60px;
+        margin-top: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .error-message {
+        color: #e63946;
+        text-align: center;
+        margin-top: 12px;
+        font-weight: bold;
+      }
+      .message-toast {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        border-radius: 32px;
+        text-align: center;
+      }
+      .success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      footer {
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 0.8rem;
+        color: #2c3e66;
+      }
+      @media (max-width: 640px) {
+        .form-card {
+          padding: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="survey-container">
+      <div class="header-card">
+        <i
+          class="fas fa-microchip"
+          style="font-size: 2.5rem; color: #0077b6"
+        ></i>
+        <h1>🤖 استبيان كورس Arduino</h1>
+      </div>
+      <div class="form-card">
+        <div id="dynamicForm"></div>
+        <button id="sendFeedbackBtn" class="btn-submit">
+          <i class="fas fa-paper-plane"></i> إرسال التقييم
+        </button>
+        <div id="formStatus"></div>
+      </div>
+      <footer>
+        <i class="fas fa-envelope"></i> يتم إرسال الردود إلى بريد المدرب
+        والمساعد | تقييمك يهمنا
+      </footer>
+    </div>
+
+    <script>
+      // ============================================================
+      // 🔑 قم بتعديل هذه المتغيرات الثلاثة بمفاتيحك من EmailJS 🔑
+      // ============================================================
+      const EMAILJS_PUBLIC_KEY = "PsRPuhvmsLQkcs1Xz"; // ضع PUBLIC KEY هنا
+      const EMAILJS_SERVICE_ID = "service_cqv47yv"; // ضع SERVICE ID
+      const EMAILJS_TEMPLATE_ID = "template_w5we4ji"; // ضع TEMPLATE ID
+      // ============================================================
+
+      const questionsList = [
+        {
+          id: "q1",
+          type: "rating",
+          label: "⭐ مدى رضاك العام عن الكورس؟",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q2",
+          type: "rating",
+          label: "💡 مدى فائدتك من كورس اساسيات Arduino ؟",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q3",
+          type: "rating",
+          label: "🎤 وضوح شرح المدرب (الكوتش)",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q4",
+          type: "rating",
+          label: "👨‍🏫 مدى فائدة الكوتش المساعد",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q5",
+          type: "rating",
+          label: "🔧 جودة التمارين العملية والمشاريع الصغيرة",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q6",
+          type: "select",
+          label: "📐 مستوى صعوبة المشاريع المطلوبة",
+          options: ["سهلة جداً", "مناسبة", "صعبة نوعاً ما", "صعبة جداً"],
+        },
+        {
+          id: "q7",
+          type: "radio",
+          label: "🏁 هل حللت جميع الوظائف المطلوبة بنجاح؟",
+          options: ["نعم", "لا", "جزئياً"],
+        },
+        {
+          id: "q8",
+          type: "textarea",
+          label: "💬 أكثر شيء أعجبك في الكورس؟ (اختياري)",
+          placeholder: "اكتب هنا...",
+        },
+        {
+          id: "q9",
+          type: "textarea",
+          label: "✍️ اقتراحاتك لتطوير الكورس",
+          placeholder: "نقترح بكل ترحيب...",
+        },
+        {
+          id: "q10",
+          type: "rating",
+          label: "📚 تقييم المحتوى التعليمي (شرائح، ملفات)",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q11",
+          type: "select",
+          label: "⏩ وتيرة الكورس (السرعة)",
+          options: ["بطيئة جداً", "بطيئة", "مناسبة", "سريعة", "سريعة جداً"],
+        },
+        {
+          id: "q12",
+          type: "select",
+          label: "🧠 خبرتك السابقة في الإلكترونيات",
+          options: ["لا توجد خبرة", "أساسيات بسيطة", "متوسط", "متقدم"],
+        },
+        {
+          id: "q13",
+          type: "select",
+          label: "🔁 من 0 إلى 10، كم توصي الكورس لصديق؟",
+          options: [1,2,3,4,5,6,7,8,9,10],
+        },
+        {
+          id: "q14",
+          type: "text",
+          label: "❓ أصعب موضوع واجهتك في الكورس؟",
+          placeholder: "مثال: التعامل مع المؤقتات، الـ LCD...",
+        },
+        {
+          id: "q15",
+          type: "text",
+          label: "✅ أسهل موضوع أو أكثر شيء استمتعت به",
+          placeholder: "مثال: تشغيل LED، التعامل مع الحساسات...",
+        },
+        {
+          id: "q16",
+          type: "rating",
+          label: "🤝 تقييم جلسات الدعم والمساعدة من المساعد",
+          options: [1, 2, 3, 4, 5],
+        },
+        {
+          id: "q17",
+          type: "radio",
+          label: "🛠️ هل كان المساعد سريعاً في حل المشاكل التقنية؟",
+          options: ["دائماً", "غالباً", "أحياناً", "نادراً"],
+        },
+        {
+          id: "q18",
+          type: "radio",
+          label: "🚀 هل ترغب بالالتحاق بكورس IOT لاحقا ؟ ",
+          options: ["بالتأكيد نعم", "ربما", "لا"],
+        },
+        {
+          id: "q19",
+          type: "textarea",
+          label: "📝ملاحظات إضافية",
+          placeholder: "أي شيء تود إضافته ...",
+          rows: 2,
+        },
+        {
+          id: "q20",
+          type: "rating",
+          label: "💰 هل كان الكورس يستحق الوقت الذي قضييته فيه ",
+          options: [1, 2, 3, 4, 5],
+        },
+      ];
+
+      function buildForm() {
+        const container = document.getElementById("dynamicForm");
+        if (!container) return;
+        let html = `<div class="question-block"><div class="q-label"><i class="fas fa-user-edit"></i> الاسم (اختياري)</div><input type="text" id="studentName" placeholder="أدخل اسمك"></div>`;
+        questionsList.forEach((q, idx) => {
+          html += `<div class="question-block" data-qid="${q.id}">`;
+          html += `<div class="q-label"><i class="fas fa-question-circle"></i> ${idx + 1}. ${q.label} <span class="required-star">*</span></div>`;
+          if (q.type === "rating") {
+            html += `<div class="rating-group">`;
+            q.options.forEach((val) => {
+              html += `<label class="rating-option"><input type="radio" name="${q.id}" value="${val}" required> <span>${val}⭐</span></label>`;
+            });
+
+            html += `</div>`;
+          } else if (q.type === "select") {
+            html += `<select name="${q.id}" required><option value="" disabled selected>-- اختر --</option>${q.options.map((opt) => `<option value="${opt}">${opt}</option>`).join("")}</select>`;
+          } else if (q.type === "radio") {
+            html += `<div class="inline-options">${q.options.map((opt) => `<div><input type="radio" name="${q.id}" value="${opt}" required> <label>${opt}</label></div>`).join("")}</div>`;
+          } else if (q.type === "textarea") {
+            html += `<textarea name="${q.id}" rows="2" placeholder="${q.placeholder}" required></textarea>`;
+          } else if (q.type === "text") {
+            html += `<input type="text" name="${q.id}" placeholder="${q.placeholder}" required>`;
+          } else if (q.type === "range") {
+            html += `<select name="${q.id}" required><option value="" disabled selected>اختر درجة</option>${Array.from(
+              { length: q.max - q.min + 1 },
+              (_, i) => i + q.min,
+            )
+              .map((v) => `<option value="${v}">${v}</option>`)
+              .join("")}</select>`;
+          }
+          html += `</div>`;
+        });
+        container.innerHTML = html;
+      }
+
+      // التحقق من صحة جميع الحقول الإجبارية
+      function validateRequired() {
+        let isValid = true;
+        for (let q of questionsList) {
+          let el;
+          if (q.type === "rating" || q.type === "radio") {
+            el = document.querySelector(`input[name="${q.id}"]:checked`);
+          } else if (q.type === "select" || q.type === "range") {
+            el = document.querySelector(`select[name="${q.id}"]`);
+            if (el && !el.value) el = null;
+          } else {
+            el = document.querySelector(`[name="${q.id}"]`);
+          }
+          const block = document.querySelector(
+            `.question-block[data-qid="${q.id}"]`,
+          );
+          if (
+            !el ||
+            (el.tagName === "SELECT" && !el.value) ||
+            (el.type === "radio" && !el.checked) ||
+            (el.tagName === "TEXTAREA" && !el.value.trim()) ||
+            (el.tagName === "INPUT" && el.type !== "radio" && !el.value.trim())
+          ) {
+            if (block) block.classList.add("error-border");
+            isValid = false;
+          } else {
+            if (block) block.classList.remove("error-border");
+          }
+        }
+        return isValid;
+      }
+
+      // جمع البيانات وإرسال كل إجابة في متغير منفصل
+      function collectDataAsObject() {
+        let data = {
+          student_name:
+            document.getElementById("studentName")?.value.trim() ||
+            "لم يذكر الاسم",
+        };
+        for (let q of questionsList) {
+          let value = "";
+          if (q.type === "rating" || q.type === "radio") {
+            let selected = document.querySelector(
+              `input[name="${q.id}"]:checked`,
+            );
+            value = selected ? selected.value : "";
+          } else if (q.type === "select" || q.type === "range") {
+            let sel = document.querySelector(`select[name="${q.id}"]`);
+            value = sel ? sel.value : "";
+          } else {
+            let input = document.querySelector(`[name="${q.id}"]`);
+            value = input ? input.value.trim() : "";
+          }
+          data[q.id] = value || "لم يجب";
+        }
+        return data;
+      }
+
+      async function sendFeedback() {
+        const btn = document.getElementById("sendFeedbackBtn");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML =
+          '<i class="fas fa-spinner fa-pulse"></i> جاري الإرسال...';
+        btn.disabled = true;
+
+        // إزالة أخطاء سابقة
+        document
+          .querySelectorAll(".question-block")
+          .forEach((block) => block.classList.remove("error-border"));
+        if (!validateRequired()) {
+          showStatus(
+            "❌ الرجاء الإجابة على جميع الأسئلة الإجبارية (الموضحة بالنجمة)",
+            true,
+          );
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          return;
+        }
+
+        if (
+          EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY" ||
+          EMAILJS_SERVICE_ID === "YOUR_SERVICE_ID" ||
+          EMAILJS_TEMPLATE_ID === "YOUR_TEMPLATE_ID"
+        ) {
+          showStatus(
+            "❌ حدث خطأ أثناء الإرسال، حاول مرة أخرى.",
+            true,
+          );
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          return;
+        }
+
+        const answers = collectDataAsObject();
+        // بناء كائن params يحتوي على كل إجابة بمتغير منفصل
+        let templateParams = {
+          from_name: answers.student_name,
+          q1: answers.q1,
+          q2: answers.q2,
+          q3: answers.q3,
+          q4: answers.q4,
+          q5: answers.q5,
+          q6: answers.q6,
+          q7: answers.q7,
+          q8: answers.q8,
+          q9: answers.q9,
+          q10: answers.q10,
+          q11: answers.q11,
+          q12: answers.q12,
+          q13: answers.q13,
+          q14: answers.q14,
+          q15: answers.q15,
+          q16: answers.q16,
+          q17: answers.q17,
+          q18: answers.q18,
+          q19: answers.q19,
+          q20: answers.q20,
+        };
+
+        try {
+          emailjs.init(EMAILJS_PUBLIC_KEY);
+          const response = await emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            templateParams,
+          );
+          if (response.status === 200) {
+            showStatus("✅ تم إرسال تقييمك بنجاح! شكراً جزيلاً 🙌");
+            // إعادة تعيين النموذج
+            document
+              .querySelectorAll('input[type="radio"]')
+              .forEach((r) => (r.checked = false));
+            document
+              .querySelectorAll("select")
+              .forEach((s) => (s.selectedIndex = 0));
+            document
+              .querySelectorAll(
+                'textarea, input[type="text"]:not(#studentName)',
+              )
+              .forEach((inp) => (inp.value = ""));
+            document.getElementById("studentName").value = "";
+            document
+              .querySelectorAll(".question-block")
+              .forEach((block) => block.classList.remove("error-border"));
+          } else {
+            showStatus("❌ حدث خطأ أثناء الإرسال، حاول مرة أخرى.", true);
+          }
+        } catch (err) {
+          console.error(err);
+          showStatus("❌ حدث خطأ أثناء الإرسال، حاول مرة أخرى.", true);
+        } finally {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+        }
+      }
+
+      function showStatus(msg, isError = false) {
+        const statusDiv = document.getElementById("formStatus");
+        statusDiv.innerHTML = `<div class="message-toast ${isError ? "error" : "success"}">${msg}</div>`;
+        setTimeout(() => {
+          if (statusDiv.firstChild) statusDiv.innerHTML = "";
+        }, 5000);
+      }
+
+      window.addEventListener("DOMContentLoaded", () => {
+        buildForm();
+        document
+          .getElementById("sendFeedbackBtn")
+          .addEventListener("click", sendFeedback);
+      });
+    </script>
+  </body>
+</html>
+
